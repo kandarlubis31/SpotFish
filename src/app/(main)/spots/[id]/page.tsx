@@ -15,6 +15,7 @@ import CatchLog from '@/components/spots/CatchLog';
 import WeatherCard from '@/components/ui/WeatherCard';
 import SpotInfoGrid from '@/components/spots/SpotInfoGrid';
 import ReviewSection from '@/components/spots/ReviewSection';
+import { useToast } from '@/components/ui/Toast';
 
 const MapView = dynamic(() => import('@/components/map/MapView'), {
   ssr: false,
@@ -46,6 +47,8 @@ export default function SpotDetailPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [confirming, setConfirming] = useState<0 | 1 | -1>(0);
 
+  const { toast } = useToast();
+
   useEffect(() => {
     const ctrl = new AbortController();
     if (params.id) {
@@ -76,17 +79,26 @@ export default function SpotDetailPage() {
 
   async function toggleFavorite() {
     if (!spot) return;
-    setFavoriteLoading(true);
+    // Optimistic: flip immediately, rollback on failure
+    const prev = isFavorited;
+    setIsFavorited(!prev);
     try {
       const res = await fetch(`/api/favorites/${spot.id}`, { method: 'POST' });
       if (res.status === 401) {
+        setIsFavorited(prev);
         router.push(`/login?redirect=/spots/${spot.id}`);
+        return;
+      }
+      if (!res.ok) {
+        setIsFavorited(prev);
         return;
       }
       const data = await res.json();
       setIsFavorited(data.favorited);
-    } catch (e) { console.warn('Failed to toggle favorite:', e); }
-    setFavoriteLoading(false);
+    } catch (e) {
+      setIsFavorited(prev);
+      console.warn('Failed to toggle favorite:', e);
+    }
   }
 
   async function fetchSpot(id: string) {
@@ -155,21 +167,24 @@ export default function SpotDetailPage() {
 
   async function handleVerify() {
     if (!spot) return;
-    setVerifying(true);
+    // Optimistic: flip badge immediately, rollback on failure
+    const prev = spot.is_verified;
+    setSpot({ ...spot, is_verified: !prev });
     try {
       const res = await fetch('/api/admin/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ spot_id: spot.id, verified: !spot.is_verified }),
+        body: JSON.stringify({ spot_id: spot.id, verified: !prev }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setSpot({ ...spot, is_verified: data.is_verified });
+      if (!res.ok) {
+        setSpot({ ...spot, is_verified: prev });
+        return;
       }
+      const data = await res.json();
+      setSpot({ ...spot, is_verified: data.is_verified });
     } catch (err) {
+      setSpot({ ...spot, is_verified: prev });
       console.warn('Failed to verify spot:', err);
-    } finally {
-      setVerifying(false);
     }
   }
 
@@ -182,7 +197,7 @@ export default function SpotDetailPage() {
         router.push('/spots');
       } else {
         const data = await res.json();
-        alert(data.error || 'Gagal menghapus spot');
+        toast(data.error || 'Gagal menghapus spot', 'error');
       }
     } catch (err) {
       console.warn('Failed to delete spot:', err);
@@ -227,6 +242,29 @@ export default function SpotDetailPage() {
         <span className="text-gray-700 dark:text-gray-200">{spot.name}</span>
       </div>
 
+      {/* Hero photo — full-width with overlay badges */}
+      {spot.photos && spot.photos.length > 0 && (
+        <div className="relative -mx-4 md:mx-0 mb-6 rounded-b-xl md:rounded-xl overflow-hidden md:border md:border-gray-200 dark:md:border-gray-700 h-56 md:h-72">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={spot.photos[0]}
+            alt={spot.name}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+          {spot.photos.length > 1 && (
+            <span className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2.5 py-1 rounded-full flex items-center gap-1.5 backdrop-blur-sm">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <path d="M21 15l-5-5L5 21" />
+              </svg>
+              {spot.photos.length} foto
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start gap-4 mb-6">
         <SpotTypeIcon type={spot.spot_type} size="lg" />
@@ -267,7 +305,8 @@ export default function SpotDetailPage() {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        {/* Desktop action buttons */}
+        <div className="hidden md:flex items-center gap-2">
           <div className="relative">
             <button
               onClick={() => setShareMenuOpen(!shareMenuOpen)}
@@ -330,6 +369,47 @@ export default function SpotDetailPage() {
             </button>
           )}
         </div>
+      </div>
+
+      {/* Mobile sticky action bar */}
+      <div className="md:hidden sticky top-16 z-40 -mx-4 px-4 py-2.5 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-y border-gray-200 dark:border-gray-700 flex items-center gap-2 mb-6">
+        <button
+          onClick={toggleFavorite}
+          className={`press-scale flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
+            isFavorited
+              ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-500/30'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
+          }`}
+        >
+          {isFavorited ? (
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+          ) : (
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+          )}
+          {isFavorited ? 'Tersimpan' : 'Simpan'}
+        </button>
+        <div className="relative flex-1">
+          <button
+            onClick={() => setShareMenuOpen(!shareMenuOpen)}
+            className="press-scale w-full flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+          >
+            Bagikan
+          </button>
+          {shareMenuOpen && (
+            <ShareMenu
+              spot={spot}
+              onClose={() => setShareMenuOpen(false)}
+            />
+          )}
+        </div>
+        {isOwner && (
+          <Link
+            href={`/spots/${spot.id}/edit`}
+            className="press-scale flex items-center justify-center px-3.5 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700"
+          >
+            Edit
+          </Link>
+        )}
       </div>
 
       {/* Legit Check — community confirmation */}
@@ -395,7 +475,7 @@ export default function SpotDetailPage() {
         {(spot.reject_count ?? 0) > (spot.legit_count ?? 0) &&
           (spot.reject_count ?? 0) + (spot.legit_count ?? 0) >= 2 && (
             <p className="mt-3 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg px-3 py-2">
-              ⚠️ Beberapa pemancing melaporkan belum menemukan spot ini. Info mungkin belum akurat.
+              Beberapa pemancing melaporkan belum menemukan spot ini. Info mungkin belum akurat.
             </p>
           )}
         {!isLoggedIn && !isOwner && (
@@ -464,7 +544,7 @@ export default function SpotDetailPage() {
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                className="press-scale px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
               >
                 {deleting ? 'Menghapus...' : 'Hapus Permanen'}
               </button>

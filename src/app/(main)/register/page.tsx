@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { getPasswordStrength } from '@/lib/passwordStrength';
 
 function RegisterForm() {
   const router = useRouter();
@@ -15,17 +16,64 @@ function RegisterForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Touched state — show inline errors only after field interaction
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const strength = getPasswordStrength(password);
+
+  // Inline field validation
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const usernameValid = /^[a-zA-Z0-9_]{3,20}$/.test(username);
+  const passwordValid = password.length >= 6;
+  const confirmValid = confirmPassword.length > 0 && confirmPassword === password;
+
+  function markTouched(field: string) {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  }
+
+  function fieldClass(field: string, valid: boolean): string {
+    const base = 'w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none';
+    if (!touched[field]) return `${base} border-gray-300 dark:border-gray-600`;
+    return valid
+      ? `${base} border-green-400 dark:border-green-500`
+      : `${base} border-red-400 dark:border-red-500`;
+  }
+
+  function FieldError({ show, message }: { show: boolean; message: string }) {
+    if (!show) return null;
+    return (
+      <p className="text-xs text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
+        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        {message}
+      </p>
+    );
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
 
-    if (password !== confirmPassword) {
-      setError('Password tidak cocok');
+    // Validate all — mark everything touched
+    setTouched({ email: true, username: true, password: true, confirm: true });
+
+    if (!emailValid) {
+      setError('Format email tidak valid');
       return;
     }
-
-    if (username.length < 3) {
-      setError('Username minimal 3 karakter');
+    if (!usernameValid) {
+      setError('Username 3-20 karakter, hanya huruf, angka, dan underscore');
+      return;
+    }
+    if (!passwordValid) {
+      setError('Password minimal 6 karakter');
+      return;
+    }
+    if (!confirmValid) {
+      setError('Konfirmasi password tidak cocok');
       return;
     }
 
@@ -65,21 +113,23 @@ function RegisterForm() {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
           {error && (
             <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-4 text-sm">
-              ⚠️ {error}
+              {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => markTouched('email')}
                 placeholder="email@contoh.com"
-                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className={fieldClass('email', emailValid)}
                 required
               />
+              <FieldError show={touched.email && !emailValid} message="Format email tidak valid" />
             </div>
 
             <div>
@@ -87,11 +137,15 @@ function RegisterForm() {
               <input
                 type="text"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => setUsername(e.target.value.replace(/\s/g, ''))}
+                onBlur={() => markTouched('username')}
                 placeholder="pemancing_jkt"
-                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className={fieldClass('username', usernameValid)}
                 required
-                minLength={3}
+              />
+              <FieldError
+                show={touched.username && !usernameValid}
+                message="3-20 karakter, hanya huruf/angka/underscore"
               />
             </div>
 
@@ -101,11 +155,37 @@ function RegisterForm() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => markTouched('password')}
                 placeholder="••••••••"
-                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className={fieldClass('password', passwordValid)}
                 required
                 minLength={6}
               />
+              <FieldError show={touched.password && !passwordValid} message="Minimal 6 karakter" />
+
+              {/* Password strength meter */}
+              {password && (
+                <div className="mt-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 flex gap-1">
+                      {[1, 2, 3, 4].map((i) => (
+                        <span
+                          key={i}
+                          className={`h-1.5 flex-1 rounded-full transition-colors ${
+                            i <= strength.score ? strength.color : 'bg-gray-200 dark:bg-gray-700'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className={`text-xs font-medium ${strength.textColor}`}>{strength.label}</span>
+                  </div>
+                  {strength.hints.length > 0 && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      Tambahkan: {strength.hints.join(', ')}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
@@ -114,17 +194,19 @@ function RegisterForm() {
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                onBlur={() => markTouched('confirm')}
                 placeholder="••••••••"
-                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className={fieldClass('confirm', confirmValid)}
                 required
                 minLength={6}
               />
+              <FieldError show={touched.confirm && !confirmValid} message="Password tidak cocok" />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="press-scale w-full bg-blue-600 text-white py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
               {loading ? 'Mendaftar...' : 'Daftar Sekarang'}
             </button>

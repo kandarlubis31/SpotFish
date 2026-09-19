@@ -209,7 +209,7 @@ export default function CatchLog({ spotId }: CatchLogProps) {
                 })
                 .catch(() => router.push(`/login?redirect=/spots/${spotId}`));
             }}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+            className="press-scale bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
           >
             {showForm ? 'Tutup' : '+ Catat Tangkapan'}
           </button>
@@ -343,7 +343,7 @@ export default function CatchLog({ spotId }: CatchLogProps) {
             <button
               type="submit"
               disabled={submitting || (!fishSpeciesId && !fishName)}
-              className="bg-green-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+              className="bg-green-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
             >
               {submitting ? 'Menyimpan...' : 'Simpan'}
             </button>

@@ -199,14 +199,14 @@ export default function ProfilePage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                className="press-scale bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
                 {saving ? 'Menyimpan...' : 'Simpan'}
               </button>
               <button
                 type="button"
                 onClick={() => { setEditing(false); setBio(profile.bio || ''); setSpecialization(profile.specialization || 'all'); }}
-                className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-6 py-2 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600"
+                className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-6 py-2.5 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600"
               >
                 Batal
               </button>
@@ -224,7 +224,7 @@ export default function ProfilePage() {
             </div>
             <button
               onClick={() => setEditing(true)}
-              className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 px-6 py-2 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 px-6 py-2.5 rounded-lg font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               Edit Profile
             </button>
@@ -310,7 +310,7 @@ export default function ProfilePage() {
             <button
               type="submit"
               disabled={pwSaving}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="press-scale bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
               {pwSaving ? 'Menyimpan...' : 'Simpan Password'}
             </button>

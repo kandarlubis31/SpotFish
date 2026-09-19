@@ -67,7 +67,7 @@ export default function ReviewSection({ spotId, reviews, onReviewSubmitted, requ
               })
               .catch(() => requireAuth());
           }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          className="press-scale bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
         >
           Tulis Ulasan
         </button>
@@ -95,7 +95,7 @@ export default function ReviewSection({ spotId, reviews, onReviewSubmitted, requ
             <button
               type="submit"
               disabled={rating === 0 || submitting}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="bg-blue-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
               {submitting ? 'Mengirim...' : 'Kirim Ulasan'}
             </button>

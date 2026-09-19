@@ -293,7 +293,7 @@ function NewSpotForm() {
 
       {error && (
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-6">
-          ⚠️ {error}
+          {error}
         </div>
       )}
 
@@ -314,7 +314,7 @@ function NewSpotForm() {
                 disabled={locating}
                 className="px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors disabled:opacity-50"
               >
-                {locating ? 'Mencari...' : '📍 Pakai Lokasiku'}
+                {locating ? 'Mencari...' : 'Pakai Lokasiku'}
               </button>
             </div>
             <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
@@ -568,7 +568,7 @@ function NewSpotForm() {
           <button
             type="submit"
             disabled={submitting || !lat || !lng}
-            className="flex-1 sm:flex-none bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="press-scale flex-1 sm:flex-none bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? 'Menyimpan...' : 'Simpan Spot'}
           </button>

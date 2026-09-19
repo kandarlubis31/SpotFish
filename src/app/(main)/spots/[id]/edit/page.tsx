@@ -467,7 +467,7 @@ function EditSpotForm() {
           <button
             type="submit"
             disabled={submitting || !lat || !lng}
-            className="flex-1 sm:flex-none bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="press-scale flex-1 sm:flex-none bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? 'Menyimpan...' : 'Simpan Perubahan'}
           </button>

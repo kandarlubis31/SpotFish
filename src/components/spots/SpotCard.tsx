@@ -19,7 +19,7 @@ export default function SpotCard({ spot, showDistance = false }: SpotCardProps) 
 
   return (
     <Link href={`/spots/${spot.id}`}>
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-lg transition-all duration-200 cursor-pointer hover:border-blue-300 dark:hover:border-blue-500">
+      <div className="hover-lift bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 cursor-pointer hover:border-blue-300 dark:hover:border-blue-500">
         {/* Header */}
         <div className="flex items-start gap-3 mb-3">
           <SpotTypeIcon type={spot.spot_type} />

@@ -138,7 +138,14 @@ export default function CommunityPage() {
                 ))}
               </div>
             ) : activities.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-4">Belum ada aktivitas</p>
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <svg className="w-10 h-10 mx-auto mb-2 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <p className="text-sm font-medium">Belum ada aktivitas</p>
+                <p className="text-xs mt-1 mb-3">Jadilah pertama yang membagikan spot atau menulis ulasan.</p>
+                <Link href="/spots/new" className="inline-block text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                  Bagikan spot →
+                </Link>
+              </div>
             ) : (
               <div className="space-y-3">
                 {activities.map((activity) => (
@@ -236,7 +243,7 @@ export default function CommunityPage() {
                             )}
                           </div>
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            👍 {check.legit_count} legit · 👎 {check.reject_count} belum ketemu
+                            {check.legit_count} legit · {check.reject_count} belum ketemu
                             {!check.confirmed && (
                               <span className="ml-1 text-blue-600 dark:text-blue-400 font-medium">
                                 · butuh {Math.max(0, legitThreshold - check.net_votes)} lagi

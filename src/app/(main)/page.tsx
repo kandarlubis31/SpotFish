@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { Spot } from '@/lib/types';
 import SpotCard from '@/components/spots/SpotCard';
+import SpotBottomSheet from '@/components/map/SpotBottomSheet';
+import OnboardingTour from '@/components/ui/OnboardingTour';
 import { haversineDistance as haversine } from '@/lib/utils';
 
 // Dynamic import for MapView (no SSR needed for Leaflet)
@@ -35,7 +37,7 @@ export default function HomePage() {
   const [userPos, setUserPos] = useState<UserPos | null>(null);
   const [radiusKm, setRadiusKm] = useState<number | null>(25);
   const [selectedSpot, setSelectedSpot] = useState<Spot | null>(null);
-  const [showSidebar, setShowSidebar] = useState(false); // Default closed on mobile
+  const [showSidebar, setShowSidebar] = useState(false); // Desktop only
   const mountedRef = useRef(true);
 
   useEffect(() => {
@@ -112,6 +114,9 @@ export default function HomePage() {
 
   return (
     <div className="relative h-[calc(100vh-64px)] md:h-[calc(100vh-64px)]">
+      {/* First-visit onboarding tour */}
+      <OnboardingTour />
+
       {/* Map — always full width */}
       <div className="absolute inset-0">
         <MapView
@@ -131,21 +136,32 @@ export default function HomePage() {
         </span>
       </div>
 
-      {/* Toggle Sidebar Button */}
+      {/* Toggle Sidebar Button — desktop only */}
       <button
         onClick={() => setShowSidebar(!showSidebar)}
-        className="absolute top-4 right-4 z-[1000] bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-lg rounded-lg px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+        className="hidden md:block absolute top-4 right-4 z-[1000] bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm shadow-lg rounded-lg px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-800 transition-colors"
       >
         {showSidebar ? 'Tutup' : 'Daftar'}
       </button>
 
-      {/* Sidebar — slides over map on mobile, beside on desktop */}
+      {/* Mobile — draggable bottom sheet (md:hidden) */}
+      <SpotBottomSheet
+        spots={nearbySpots}
+        loading={waitingLocation}
+        hasLocation={hasLocation}
+        geoState={geoState}
+        radiusKm={radiusKm}
+        onRadiusChange={setRadiusKm}
+        onRetryLocation={requestLocation}
+      />
+
+      {/* Desktop sidebar */}
       <div
         className={`
-          absolute top-0 right-0 h-full bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm shadow-2xl z-[999]
+          hidden md:block absolute top-0 right-0 h-full bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm shadow-2xl z-[999]
           transition-all duration-300 ease-in-out overflow-hidden
           ${showSidebar ? 'translate-x-0' : 'translate-x-full'}
-          w-full sm:w-96
+          w-96
         `}
       >
           <div className="h-full overflow-y-auto">
@@ -225,7 +241,7 @@ export default function HomePage() {
                 </div>
               ) : hasLocation && nearbySpots.length === 0 ? (
                 <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  <div className="text-4xl mb-2 opacity-30">📍</div>
+                  <svg className="w-10 h-10 mx-auto mb-2 opacity-30" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
                   <p>Tidak ada spot dalam radius {radiusKm} km</p>
                   <button
                     onClick={() => setRadiusKm(null)}
@@ -262,7 +278,7 @@ export default function HomePage() {
             </div>
             <a
               href={`/spots/${selectedSpot.id}`}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shrink-0"
+              className="press-scale bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shrink-0"
             >
               Detail →
             </a>

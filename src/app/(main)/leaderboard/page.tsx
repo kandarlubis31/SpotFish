@@ -100,7 +100,12 @@ export default function LeaderboardPage() {
             </h2>
             {anglers.length === 0 ? (
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center text-gray-500 dark:text-gray-400">
-                Belum ada aktivitas. Jadilah yang pertama berkontribusi!
+                <svg className="w-12 h-12 mx-auto mb-3 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+                <p className="font-medium mb-1">Papan peringkat masih kosong</p>
+                <p className="text-sm mb-4">Bagikan spot, tulis ulasan, atau catat tangkapan untuk mengumpulkan poin.</p>
+                <Link href="/spots/new" className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                  Bagikan Spot Pertama
+                </Link>
               </div>
             ) : (
               <div className="space-y-2">
@@ -153,7 +158,11 @@ export default function LeaderboardPage() {
             </h2>
             {topSpots.length === 0 ? (
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                Belum cukup ulasan untuk membuat peringkat.
+                <p className="font-medium mb-1">Belum ada peringkat spot</p>
+                <p className="text-xs">Spot masuk peringkat setelah punya minimal 2 ulasan.</p>
+                <Link href="/spots" className="inline-block mt-3 text-blue-600 dark:text-blue-400 hover:underline">
+                  Tulis ulasan pertama →
+                </Link>
               </div>
             ) : (
               <div className="space-y-2">

@@ -46,7 +46,7 @@ export default function ShareMenu({ spot, onClose }: ShareMenuProps) {
   }, [onClose]);
 
   const spotUrl = typeof window !== 'undefined' ? window.location.href : '';
-  const shareText = `🎣 ${spot.name} - Spot mancing favorit di SpotFish!`;
+  const shareText = `${spot.name} — Spot mancing favorit di SpotFish!`;
 
   const shareLinks = [
     {

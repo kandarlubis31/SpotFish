@@ -8,6 +8,8 @@ import { Spot, SPOT_TYPE_LABELS, FACILITY_LABELS, ACCESSIBILITY_LABELS } from '@
 import WaterLayer from './WaterLayer';
 import GPSTracker from './GPSTracker';
 import LingerDetector from './LingerDetector';
+import ClusteredMarkers from './ClusteredMarkers';
+import { useToast } from '@/components/ui/Toast';
 import { formatDistance, formatRating } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -116,10 +118,11 @@ interface MapViewProps {
   height?: string;
 }
 
-type MapStyle = 'clean' | 'satellite' | 'hybrid';
+type MapStyle = 'clean' | 'gray' | 'satellite' | 'hybrid';
 
 const MAP_STYLES: { value: MapStyle; label: string }[] = [
-  { value: 'clean', label: 'Clean' },
+  { value: 'clean', label: 'Standar' },
+  { value: 'gray', label: 'Minimal' },
   { value: 'satellite', label: 'Satelit' },
   { value: 'hybrid', label: 'Hybrid' },
 ];
@@ -132,13 +135,36 @@ export default function MapView({
   onSpotClick,
   height = '100vh',
 }: MapViewProps) {
+  const { toast } = useToast();
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [mapCenter, setMapCenter] = useState<[number, number]>(center);
   const [locating, setLocating] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  const [mapStyle, setMapStyle] = useState<MapStyle>('clean');
+  // Default = 'gray' (Minimal/Esri) — fishing-first: kanvas bersih, air & spot jadi fokus
+  const [mapStyle, setMapStyleState] = useState<MapStyle>('gray');
   const [showStylePicker, setShowStylePicker] = useState(false);
   const [isTracking, setIsTracking] = useState(false);
+
+  // Persisted style — load once from localStorage (client-side only, after hydration)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('spotfish-map-style') as MapStyle | null;
+      if (saved && MAP_STYLES.some((s) => s.value === saved)) {
+        setMapStyleState(saved);
+      }
+    } catch {
+      // storage unavailable — keep default
+    }
+  }, []);
+
+  const setMapStyle = (style: MapStyle) => {
+    setMapStyleState(style);
+    try {
+      localStorage.setItem('spotfish-map-style', style);
+    } catch {
+      // ignore
+    }
+  };
 
   // Detect dark mode
   useEffect(() => {
@@ -155,7 +181,7 @@ export default function MapView({
   useEffect(() => {
     const container = document.querySelector('.leaflet-container');
     if (container) {
-      container.classList.toggle('satellite-mode', mapStyle === 'satellite' || mapStyle === 'hybrid');
+      container.classList.toggle('satellite-mode', mapStyle === 'satellite' || mapStyle === 'hybrid' || mapStyle === 'gray');
     }
   }, [mapStyle]);
 
@@ -174,7 +200,7 @@ export default function MapView({
 
   function handleLocate() {
     if (!navigator.geolocation) {
-      alert('Browser kamu tidak mendukung geolocation.');
+      toast('Browser kamu tidak mendukung geolocation.', 'error');
       return;
     }
     setLocating(true);
@@ -188,11 +214,11 @@ export default function MapView({
       (err) => {
         setLocating(false);
         if (err.code === 1) {
-          alert('Izin lokasi ditolak.\n\nCara mengaktifkan:\n1. Klik ikon gembok di address bar\n2. Pilih \"Izinkan\" untuk Lokasi\n3. Refresh halaman');
+          toast('Izin lokasi ditolak. Aktifkan di address bar (ikon gembok) lalu refresh.', 'error', 6000);
         } else if (err.code === 2) {
-          alert('Lokasi tidak tersedia. Pastikan GPS aktif.');
+          toast('Lokasi tidak tersedia. Pastikan GPS aktif.', 'error');
         } else {
-          alert('Timeout mendapatkan lokasi. Coba lagi.');
+          toast('Timeout mendapatkan lokasi. Coba lagi.', 'error');
         }
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -212,11 +238,22 @@ export default function MapView({
         {(mapStyle === 'clean') && (
           <TileLayer
             key="clean"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM contributors</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            // OSM policy: maxZoom 19, no heavy usage. Dark mode diberi filter CSS.
+          />
+        )}
+
+        {/* Minimal — Esri Light/Dark Gray Canvas: clean look tanpa kebisingan POI, no API key */}
+        {(mapStyle === 'gray') && (
+          <TileLayer
+            key="gray"
+            attribution='&copy; <a href="https://www.esri.com/">Esri</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
             url={isDark
-              ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-              : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+              ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+              : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'
             }
+            maxZoom={16}
           />
         )}
 
@@ -309,19 +346,22 @@ export default function MapView({
         {/* My Position button */}
         <LocationButton onLocate={handleLocate} />
 
-        {/* Spot markers */}
-        {spots.map((spot) => (
-          <Marker
-            key={spot.id}
-            position={[spot.lat, spot.lng]}
-            icon={createSpotIcon(spot.spot_type)}
-            eventHandlers={{
-              click: () => {
-                if (onSpotClick) onSpotClick(spot);
-              },
-            }}
-          >
-            <Popup maxWidth={300} minWidth={250}>
+        {/* Spot markers — clustered when many, individual when few (detail page) */}
+        {spots.length > 15 ? (
+          <ClusteredMarkers spots={spots} onSpotClick={onSpotClick} />
+        ) : (
+          spots.map((spot) => (
+            <Marker
+              key={spot.id}
+              position={[spot.lat, spot.lng]}
+              icon={createSpotIcon(spot.spot_type)}
+              eventHandlers={{
+                click: () => {
+                  if (onSpotClick) onSpotClick(spot);
+                },
+              }}
+            >
+              <Popup maxWidth={300} minWidth={250}>
               <div className="p-1">
                 {spot.photos && spot.photos.length > 0 && (
                   <div className="relative -mx-1 -mt-1 mb-2 h-28 overflow-hidden">
@@ -381,9 +421,10 @@ export default function MapView({
                   Lihat Detail →
                 </Link>
               </div>
-            </Popup>
-          </Marker>
-        ))}
+              </Popup>
+            </Marker>
+          ))
+        )}
 
         {/* User location marker */}
         {userLocation && (

@@ -5,6 +5,7 @@ import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { haversineDistance as haversine } from '@/lib/utils';
 import { downloadGpx } from '@/lib/gpx';
+import { useToast } from '@/components/ui/Toast';
 
 interface TrackPoint {
   lat: number;
@@ -39,6 +40,7 @@ function formatSpeed(mps: number): string {
 
 export default function GPSTracker({ onTrackingChange }: GPSTrackerProps) {
   const map = useMap();
+  const { toast } = useToast();
   const [isTracking, setIsTracking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -113,7 +115,7 @@ export default function GPSTracker({ onTrackingChange }: GPSTrackerProps) {
 
   function startTracking() {
     if (!navigator.geolocation) {
-      alert('Browser tidak mendukung GPS tracking.');
+      toast('Browser tidak mendukung GPS tracking.', 'error');
       return;
     }
 
@@ -161,7 +163,7 @@ export default function GPSTracker({ onTrackingChange }: GPSTrackerProps) {
       (err) => {
         console.warn('GPS tracking error:', err.message);
         if (err.code === 1) {
-          alert('Izin lokasi ditolak. Aktifkan izin lokasi di browser.');
+          toast('Izin lokasi ditolak. Aktifkan izin lokasi di browser.', 'error');
           stopTracking();
         }
       },
@@ -351,8 +353,14 @@ export default function GPSTracker({ onTrackingChange }: GPSTrackerProps) {
               {lastSession.points.length} titik GPS terekam. Ekspor route untuk dibuka di aplikasi lain (Strava, Google Earth, dll).
             </div>
             <button
-              onClick={() => downloadGpx(lastSession.points)}
-              className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+              onClick={() => {
+                if (downloadGpx(lastSession.points)) {
+                  toast('Track GPX berhasil diunduh', 'success');
+                } else {
+                  toast('Track terlalu pendek untuk diekspor (minimal 2 titik).', 'error');
+                }
+              }}
+              className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />

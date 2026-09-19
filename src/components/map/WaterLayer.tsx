@@ -60,35 +60,51 @@ function setCachedData(data: WaterFeature[]) {
   }
 }
 
-// Fetch water bodies from Overpass API
+// Overpass endpoints — overpass-api.de sering menolak request dari VPS (406),
+// jadi gunakan fallback chain mirror
+const OVERPASS_ENDPOINTS = [
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+];
+
+// Fetch water bodies from Overpass API (tries mirrors in order)
 async function fetchWaterBodies(
   south: number, west: number, north: number, east: number
 ): Promise<WaterFeature[]> {
   const pad = 0.05;
   const bbox = `${south - pad},${west - pad},${north + pad},${east + pad}`;
 
+  // Catatan: relation dengan tag "water" spesifik sering tidak ada — filter hanya
+  // natural=water pada relation, biar parseOverpassResponse yang menyaring bentuk
   const query = `
     [out:json][timeout:15];
     (
-      way["natural"="water"]["water"~"lake|reservoir|pond|oxbow"](bbox);
-      way["natural"="water"]["water"!~"."](bbox);
-      relation["natural"="water"]["water"~"lake|reservoir|pond|oxbow"](bbox);
+      way["natural"="water"]["water"~"lake|reservoir|pond|oxbow"](${bbox});
+      way["natural"="water"]["water"!~"."](${bbox});
+      relation["natural"="water"](${bbox});
     );
     out body;
     >;
     out skel qt;
   `.trim();
 
-  const res = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    body: `data=${encodeURIComponent(query)}`,
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-  });
-
-  if (!res.ok) throw new Error(`Overpass API error: ${res.status}`);
-
-  const data = await res.json();
-  return parseOverpassResponse(data);
+  let lastError: Error | null = null;
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        body: `data=${encodeURIComponent(query)}`,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      });
+      if (!res.ok) throw new Error(`Overpass API error: ${res.status}`);
+      const data = await res.json();
+      return parseOverpassResponse(data);
+    } catch (err) {
+      lastError = err as Error;
+    }
+  }
+  throw lastError || new Error('All Overpass endpoints failed');
 }
 
 // Parse Overpass JSON into GeoJSON features
@@ -179,11 +195,11 @@ export default function WaterLayer() {
   }, [map]);
 
   const style = useMemo(() => ({
-    fillColor: '#3b82f6',
-    fillOpacity: 0.15,
-    color: '#2563eb',
-    weight: 1.5,
-    opacity: 0.4,
+    fillColor: '#2563eb',
+    fillOpacity: 0.3,
+    color: '#1d4ed8',
+    weight: 2,
+    opacity: 0.6,
     className: 'water-body',
   }), []);
 

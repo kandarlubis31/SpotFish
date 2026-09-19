@@ -46,10 +46,9 @@ ${trkpts}
 </gpx>`;
 }
 
-export function downloadGpx(points: GpxPoint[], filename?: string) {
+export function downloadGpx(points: GpxPoint[], filename?: string): boolean {
   if (points.length < 2) {
-    alert('Track terlalu pendek untuk diekspor (minimal 2 titik).');
-    return;
+    return false;
   }
   const date = new Date();
   const fname =
@@ -67,4 +66,5 @@ export function downloadGpx(points: GpxPoint[], filename?: string) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  return true;
 }

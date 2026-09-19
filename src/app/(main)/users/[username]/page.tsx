@@ -146,7 +146,7 @@ export default function PublicProfilePage() {
       <div className="flex gap-1 mb-6 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
         <button
           onClick={() => setActiveTab('spots')}
-          className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
             activeTab === 'spots'
               ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
               : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
@@ -156,7 +156,7 @@ export default function PublicProfilePage() {
         </button>
         <button
           onClick={() => setActiveTab('reviews')}
-          className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
             activeTab === 'reviews'
               ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
               : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
@@ -170,7 +170,11 @@ export default function PublicProfilePage() {
       {activeTab === 'spots' ? (
         spots.length === 0 ? (
           <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            <p>Belum ada spot</p>
+            <svg className="w-12 h-12 mx-auto mb-3 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <p className="font-medium">{profile.username} belum membagikan spot</p>
+            <Link href="/spots" className="inline-block mt-3 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+              Jelajahi spot lain →
+            </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -197,7 +201,8 @@ export default function PublicProfilePage() {
       ) : (
         reviews.length === 0 ? (
           <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            <p>Belum ada ulasan</p>
+            <svg className="w-12 h-12 mx-auto mb-3 opacity-30" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            <p className="font-medium">{profile.username} belum menulis ulasan</p>
           </div>
         ) : (
           <div className="space-y-3">
